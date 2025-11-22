@@ -10,6 +10,8 @@ import {
 import { Server, Socket } from 'socket.io';
 import chalk from 'chalk';
 
+import { MessageTypeEnum } from '../common/enums/message-type.enum';
+
 @WebSocketGateway({
   cors: {
     origin: '*', // Adjust for your frontend URL in production
@@ -40,7 +42,14 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
   }
 
   handleDisconnect(client: Socket) {
-    console.log(`Client disconnected: ${client.id}`);
+    const clientData = this.clients.get(client.id);
+    this.server.emit('message', {
+      // name: coloredName, // Send colored name
+      name: 'Server', // Send uncolored name
+      type: MessageTypeEnum.LEAVE,
+      message: `${clientData?.name} left the chat`,
+    });
+    console.log(`Client disconnected: ${clientData?.name}`);
   }
 
   private assignUniqueColor(client: Socket): void {
@@ -69,6 +78,12 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
     if (clientData) {
       clientData.name = name;
       this.clients.set(client.id, clientData);
+      this.server.emit('message', {
+        // name: coloredName, // Send colored name
+        name: 'Server', // Send uncolored name
+        type: MessageTypeEnum.JOIN,
+        message: `${clientData?.name} joined the chat`,
+      });
       console.log(`Client ${client.id} setting name to: ${name}`);
     }
   }
@@ -86,7 +101,8 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
     console.log(`${clientName}: ${data.message}`);
     this.server.emit('message', {
-      name: coloredName, // Send colored name
+      // name: coloredName, // Send colored name
+      name: clientName, // Send uncolored name
       message: data.message,
     });
   }
