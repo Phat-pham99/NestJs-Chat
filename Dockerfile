@@ -29,6 +29,7 @@ COPY --from=builder /app/package*.json ./
 COPY --from=builder /app/node_modules ./node_modules
 
 # Expose the port your app runs on
+ENV NO_COLOR=true
 EXPOSE 3000
 
 # Command to run the application
