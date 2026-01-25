@@ -1,6 +1,7 @@
 // client.js
 import io from 'socket.io-client';
 import readline from 'readline';
+import terminalImage from 'terminal-image';
 
 const socket = io('http://localhost:3000'); // Replace with your server URL
 
@@ -34,6 +35,14 @@ function startMessaging(rl) {
 
 socket.on('message', (data) => {
   console.log(`${data.name}: ${data.message}`); // Display colored name with message
+});
+
+socket.on('image', async (data) => {
+  try {
+    console.log(await terminalImage.buffer(data.message.data.buffer, { width: '100%' }));
+  } catch (error) {
+    console.error('Error displaying image:', error);
+  }
 });
 
 socket.on('disconnect', () => {
