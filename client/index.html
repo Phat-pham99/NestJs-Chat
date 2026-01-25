@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link rel="stylesheet" href="index.css" >
+  <title>NestJs Chat App</title>
+</head>
+<body>
+
+  <!-- Name prompt -->
+  <div id="name-overlay">
+    <div id="name-box">
+      <h3>Enter your name</h3>
+      <input type="text" id="name-input" placeholder="Your name" />
+      <button id="name-btn">Join</button>
+    </div>
+  </div>
+
+  <!-- Chat area -->
+  <div id="chat-container">
+  </div>
+
+  <!-- Message input -->
+  <div id="message-input">
+    <input type="text" id="msg" placeholder="Type a message..." />
+    <button id="send-btn">Send</button>
+  <!-- Upload Image button  -->
+  <input type="file" id="fileInput" />
+  <button onclick="upload()">Upload Image</button>
+  </div>
+
+  <!-- Socket.IO -->
+  <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+  <!-- My Javascript client logic -->
+  <script src="index.js"></script>
+
+</body>
+</html>

@@ -1,3 +1,4 @@
+import { Logger } from '@nestjs/common';
 import {
   WebSocketGateway,
   SubscribeMessage,
@@ -8,8 +9,6 @@ import {
   ConnectedSocket,
 } from '@nestjs/websockets';
 import { Server, Socket } from 'socket.io';
-import chalk from 'chalk';
-
 import { MessageTypeEnum } from '../common/enums/message-type.enum';
 
 @WebSocketGateway({
@@ -18,73 +17,54 @@ import { MessageTypeEnum } from '../common/enums/message-type.enum';
   },
 })
 export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
+  private readonly logger = new Logger(ChatGateway.name);
   @WebSocketServer()
   server: Server;
-  private clients: Map<string, { name: string; color: string }> = new Map(); // socket.id => { name, color }
-  private availableColors: string[] = [
-    'red',
-    'green',
-    'yellow',
-    'blue',
-    'magenta',
-    'cyan',
-    'redBright',
-    'greenBright',
-    'yellowBright',
-    'blueBright',
-    'magentaBright',
-    'cyanBright',
-  ];
-  private assignedColors: Set<string> = new Set();
+  private clients: Map<string, { name: string }> = new Map();
+  // -------------------------------------------------------------------------
   handleConnection(client: Socket, ...args: any[]) {
-    this.assignUniqueColor(client);
-    console.log(`Client connected: ${client.id}`);
+    this.clients.set(client.id, { name: '' });
   }
 
   handleDisconnect(client: Socket) {
+    // this.logger.log(`Client disconnected: ${JSON.stringify(client)}`);
+    this.logger.warn(`Client disconnected: ${client.id}`);
     const clientData = this.clients.get(client.id);
+    this.logger.verbose(`Client disconnected: ${JSON.stringify(clientData)}`);
+    this.logger.error(`${clientData?.name} left the chat`);
+    this.clients.delete(client.id);
     this.server.emit('message', {
-      // name: coloredName, // Send colored name
-      name: 'Server', // Send uncolored name
+      name: 'Server',
       type: MessageTypeEnum.LEAVE,
-      message: `${clientData?.name} left the chat`,
+      message: `${clientData?.name || 'unnamed'} left the chat`,
     });
-    console.log(`Client disconnected: ${clientData?.name}`);
+    this.logger.log(`Client disconnected: ${clientData?.name}`);
   }
 
-  private assignUniqueColor(client: Socket): void {
-    if (this.availableColors.length === 0) {
-      console.warn('No more unique colors available!');
-      this.clients.set(client.id, { name: 'Anonymous', color: 'gray' }); // Default color
-      return;
-    }
-
-    let color: string;
-    do {
-      color = this.availableColors[
-        Math.floor(Math.random() * this.availableColors.length)
-      ];
-    } while (this.assignedColors.has(color)); // Ensure uniqueness
-
-    this.assignedColors.add(color);
-    this.clients.set(client.id, { name: 'Anonymous', color: color });
-
-    console.log(`Assigned color ${color} to client ${client.id}`);
+  // -------------------------------------------------------------------------
+  public sendImage(file: Express.Multer.File): void {
+    this.server.emit('image', {
+      name: 'Server',
+      type: MessageTypeEnum.IMAGE,
+      message: {
+        data: file
+      },
+    });
   }
 
+  // -------------------------------------------------------------------------
   @SubscribeMessage('set_name')
   handleSetName(@ConnectedSocket() client: Socket, @MessageBody() name: string): void {
     const clientData = this.clients.get(client.id);
     if (clientData) {
       clientData.name = name;
       this.clients.set(client.id, clientData);
-      this.server.emit('message', {
-        // name: coloredName, // Send colored name
-        name: 'Server', // Send uncolored name
+      client.broadcast.emit('message', {
+        name: 'Server',
         type: MessageTypeEnum.JOIN,
         message: `${clientData?.name} joined the chat`,
       });
-      console.log(`Client ${client.id} setting name to: ${name}`);
+      this.logger.log(`Client ${client.id} setting name to: ${name}`);
     }
   }
 
@@ -92,7 +72,6 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
   handleMessage(@MessageBody() data: { message: string }, @ConnectedSocket() client: Socket): void {
     const clientData: {
       name: string;
-      color: string;
     } | undefined = this.clients.get(client.id);
     const clientName: string = clientData?.name || 'Anonymous';
     const clientColor: string = clientData?.color || 'gray'; // Default color if not assigned
