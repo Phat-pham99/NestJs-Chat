@@ -74,10 +74,6 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
       name: string;
     } | undefined = this.clients.get(client.id);
     const clientName: string = clientData?.name || 'Anonymous';
-    const clientColor: string = clientData?.color || 'gray'; // Default color if not assigned
-
-    const coloredName: string = chalk[clientColor](clientName); // Apply Chalk color
-
     console.log(`${clientName}: ${data.message}`);
     this.server.emit('message', {
       // name: coloredName, // Send colored name
