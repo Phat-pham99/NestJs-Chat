@@ -10,11 +10,10 @@ import {
 } from '@nestjs/websockets';
 import { Server, Socket } from 'socket.io';
 import { MessageTypeEnum } from '../common/enums/message-type.enum';
+import { getCorsOptions } from '../config/cors';
 
 @WebSocketGateway({
-  cors: {
-    origin: '*', // Adjust for your frontend URL in production
-  },
+  cors: getCorsOptions(),
 })
 export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
   private readonly logger = new Logger(ChatGateway.name);
