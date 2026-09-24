@@ -1,5 +1,5 @@
 import { INestApplication } from '@nestjs/common';
-import { Test, TestingModule } from '@nestjs/testing';
+import { NestFactory } from '@nestjs/core';
 import * as request from 'supertest';
 import { App } from 'supertest/types';
 import { AppModule } from './../src/app.module';
@@ -8,11 +8,7 @@ describe('App (e2e)', () => {
   let app: INestApplication<App>;
 
   beforeAll(async () => {
-    const moduleFixture: TestingModule = await Test.createTestingModule({
-      imports: [AppModule],
-    }).compile();
-
-    app = moduleFixture.createNestApplication();
+    app = await NestFactory.create(AppModule);
     await app.init();
   });
 
@@ -23,7 +19,22 @@ describe('App (e2e)', () => {
   it('/ (GET)', () => {
     return request(app.getHttpServer())
       .get('/')
+      .expect('Content-Type', /text\/html/)
       .expect(200)
-      .expect('Hello World!');
+      .expect(/NestJs Chat App/);
+  });
+
+  it('/index.js (GET)', () => {
+    return request(app.getHttpServer())
+      .get('/index.js')
+      .expect('Content-Type', /javascript/)
+      .expect(200);
+  });
+
+  it('/index.css (GET)', () => {
+    return request(app.getHttpServer())
+      .get('/index.css')
+      .expect('Content-Type', /text\/css/)
+      .expect(200);
   });
 });
