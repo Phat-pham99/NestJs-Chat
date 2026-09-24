@@ -65,18 +65,14 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
   }
 
   handleDisconnect(client: Socket) {
-    // this.logger.log(`Client disconnected: ${JSON.stringify(client)}`);
     this.logger.warn(`Client disconnected: ${client.id}`);
     const clientData = this.clients.get(client.id);
-    this.logger.verbose(`Client disconnected: ${JSON.stringify(clientData)}`);
-    this.logger.error(`${clientData?.name} left the chat`);
     this.clients.delete(client.id);
     this.server.emit('message', {
       name: 'Server',
       type: MessageTypeEnum.LEAVE,
       message: `${clientData?.name || 'unnamed'} left the chat`,
     });
-    this.logger.log(`Client disconnected: ${clientData?.name}`);
   }
 
   // -------------------------------------------------------------------------
@@ -107,7 +103,7 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
         type: MessageTypeEnum.JOIN,
         message: `${clientData?.name} joined the chat`,
       });
-      this.logger.log(`Client ${client.id} setting name to: ${validName}`);
+      this.logger.log(`Client ${client.id} joined the chat`);
     }
   }
 
@@ -124,7 +120,6 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
     const clientData = this.clients.get(client.id);
     const clientName = clientData?.name || 'Anonymous';
-    console.log(`${clientName}: ${message}`);
     this.server.emit('message', {
       // name: coloredName, // Send colored name
       name: clientName, // Send uncolored name
