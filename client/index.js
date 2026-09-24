@@ -1,4 +1,4 @@
-const serverUrl = 'http://http://ec2-54-179-190-147.ap-southeast-1.compute.amazonaws.com:3000'
+const serverUrl = window.location.origin;
 const socket = io(serverUrl);
 let clientName = "";
 
