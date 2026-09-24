@@ -10,6 +10,15 @@ describe('browser endpoint', () => {
     expect(window.io).toHaveBeenCalledWith(expectedOrigin);
   });
 
+  it('loads the Socket.IO client from the application origin', () => {
+    const { document } = loadClient();
+    const socketClient = document.querySelector(
+      'script[src="/socket.io/socket.io.js"]',
+    );
+
+    expect(socketClient).not.toBeNull();
+  });
+
   it('uploads images to the page origin', async () => {
     const { document, fetch, window } = loadClient({
       url: 'https://chat.example.test',
