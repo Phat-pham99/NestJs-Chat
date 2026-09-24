@@ -12,6 +12,45 @@ import { Server, Socket } from 'socket.io';
 import { MessageTypeEnum } from '../common/enums/message-type.enum';
 import { getCorsOptions } from '../config/cors';
 
+const MAX_NAME_LENGTH = 32;
+const MAX_MESSAGE_LENGTH = 2000;
+
+function hasControlCharacter(value: string): boolean {
+  return [...value].some((character) => {
+    const code = character.charCodeAt(0);
+    return code <= 31 || code === 127;
+  });
+}
+
+function normalizeText(value: unknown, maxLength: number): string | undefined {
+  if (typeof value !== 'string') {
+    return undefined;
+  }
+
+  const normalizedValue = value.trim();
+
+  if (
+    normalizedValue.length === 0 ||
+    normalizedValue.length > maxLength ||
+    hasControlCharacter(normalizedValue)
+  ) {
+    return undefined;
+  }
+
+  return normalizedValue;
+}
+
+function getMessage(value: unknown): string | undefined {
+  if (typeof value !== 'object' || value === null || Array.isArray(value)) {
+    return undefined;
+  }
+
+  return normalizeText(
+    (value as { message?: unknown }).message,
+    MAX_MESSAGE_LENGTH,
+  );
+}
+
 @WebSocketGateway({
   cors: getCorsOptions(),
 })
@@ -55,37 +94,41 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
   @SubscribeMessage('set_name')
   handleSetName(
     @ConnectedSocket() client: Socket,
-    @MessageBody() name: string,
+    @MessageBody() name: unknown,
   ): void {
+    const validName = normalizeText(name, MAX_NAME_LENGTH);
     const clientData = this.clients.get(client.id);
-    if (clientData) {
-      clientData.name = name;
+
+    if (validName && clientData) {
+      clientData.name = validName;
       this.clients.set(client.id, clientData);
       client.broadcast.emit('message', {
         name: 'Server',
         type: MessageTypeEnum.JOIN,
         message: `${clientData?.name} joined the chat`,
       });
-      this.logger.log(`Client ${client.id} setting name to: ${name}`);
+      this.logger.log(`Client ${client.id} setting name to: ${validName}`);
     }
   }
 
   @SubscribeMessage('message')
   handleMessage(
-    @MessageBody() data: { message: string },
+    @MessageBody() data: unknown,
     @ConnectedSocket() client: Socket,
   ): void {
-    const clientData:
-      | {
-          name: string;
-        }
-      | undefined = this.clients.get(client.id);
-    const clientName: string = clientData?.name || 'Anonymous';
-    console.log(`${clientName}: ${data.message}`);
+    const message = getMessage(data);
+
+    if (!message) {
+      return;
+    }
+
+    const clientData = this.clients.get(client.id);
+    const clientName = clientData?.name || 'Anonymous';
+    console.log(`${clientName}: ${message}`);
     this.server.emit('message', {
       // name: coloredName, // Send colored name
       name: clientName, // Send uncolored name
-      message: data.message,
+      message,
     });
   }
 }
