@@ -22,7 +22,7 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
   server: Server;
   private clients: Map<string, { name: string }> = new Map();
   // -------------------------------------------------------------------------
-  handleConnection(client: Socket, ...args: any[]) {
+  handleConnection(client: Socket) {
     this.clients.set(client.id, { name: '' });
   }
 
@@ -47,14 +47,17 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
       name: 'Server',
       type: MessageTypeEnum.IMAGE,
       message: {
-        data: file
+        data: file,
       },
     });
   }
 
   // -------------------------------------------------------------------------
   @SubscribeMessage('set_name')
-  handleSetName(@ConnectedSocket() client: Socket, @MessageBody() name: string): void {
+  handleSetName(
+    @ConnectedSocket() client: Socket,
+    @MessageBody() name: string,
+  ): void {
     const clientData = this.clients.get(client.id);
     if (clientData) {
       clientData.name = name;
@@ -69,10 +72,15 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
   }
 
   @SubscribeMessage('message')
-  handleMessage(@MessageBody() data: { message: string }, @ConnectedSocket() client: Socket): void {
-    const clientData: {
-      name: string;
-    } | undefined = this.clients.get(client.id);
+  handleMessage(
+    @MessageBody() data: { message: string },
+    @ConnectedSocket() client: Socket,
+  ): void {
+    const clientData:
+      | {
+          name: string;
+        }
+      | undefined = this.clients.get(client.id);
     const clientName: string = clientData?.name || 'Anonymous';
     console.log(`${clientName}: ${data.message}`);
     this.server.emit('message', {
